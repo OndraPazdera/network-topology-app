@@ -76,6 +76,8 @@ class NetworkMapApp {
     this.elements.modalBody.addEventListener('click', (event) => {
       if (event.target.closest('[data-save-edit]')) this.saveEdit();
       if (event.target.closest('[data-close-modal]')) this.closeModal();
+      const rollbackButton = event.target.closest('[data-rollback-event]');
+      if (rollbackButton) this.rollbackDevice(rollbackButton.dataset.rollbackEvent);
     });
   }
 
@@ -86,6 +88,10 @@ class NetworkMapApp {
       const payload = await this.readJsonResponse(response);
 
       if (!response.ok || payload.ok === false) {
+        if (this.isSessionExpired(payload)) {
+          this.handleSessionExpired(payload);
+          return;
+        }
         throw new Error(this.errorMessage(payload, `HTTP ${response.status}`));
       }
 
@@ -123,6 +129,20 @@ class NetworkMapApp {
     if (payload && payload.message) return payload.message;
     return fallback;
   }
+
+  isSessionExpired(payload) {
+    return payload && payload.error && payload.error.code === 'session_expired';
+  }
+
+  handleSessionExpired(payload) {
+    const message = this.errorMessage(payload, 'Session expired. Please log in again.');
+    this.showAlert(message);
+    this.showModalError(message);
+    window.setTimeout(() => {
+      window.location.href = 'login.php?expired=1';
+    }, 1200);
+  }
+
   renderStats() {
     const counts = { online: 0, offline: 0, warn: 0 };
     this.typeOrder.forEach((type) => counts[type] = 0);
@@ -325,6 +345,7 @@ class NetworkMapApp {
     this.elements.modalTitle.innerHTML = `${this.typeIcons[device.type]} ${this.escapeHtml(device.hostname)} <span class="modal-title-ip">${device.ip}</span>`;
     this.elements.modalBody.innerHTML = this.renderEditForm(device);
     this.elements.modal.classList.add('open');
+    this.loadDeviceHistory(ip);
   }
 
   renderEditForm(device) {
@@ -353,8 +374,110 @@ class NetworkMapApp {
           <button class="btn-save" type="button" data-save-edit>💾 Uložit změny</button>
           <button class="btn-cancel" type="button" data-close-modal>Zrušit</button>
         </div>
+        <div class="history-panel">
+          <div class="layer-title">Device history by IP</div>
+          <div id="device-history" class="history-list">Loading history...</div>
+        </div>
       </div>
     `;
+  }
+
+  async loadDeviceHistory(ip) {
+    const historyRoot = document.getElementById('device-history');
+    if (!historyRoot || !this.api.deviceHistory) return;
+
+    historyRoot.textContent = 'Loading history...';
+    try {
+      const response = await fetch(`${this.api.deviceHistory}?ip=${encodeURIComponent(ip)}`, { cache: 'no-store' });
+      const payload = await this.readJsonResponse(response);
+      if (!response.ok || payload.ok === false) {
+        if (this.isSessionExpired(payload)) {
+          this.handleSessionExpired(payload);
+          return;
+        }
+        throw new Error(this.errorMessage(payload, `HTTP ${response.status}`));
+      }
+
+      historyRoot.innerHTML = this.renderDeviceHistory(payload.events || [], !!payload.canRollback);
+    } catch (error) {
+      console.error('Device history load failed:', error);
+      historyRoot.innerHTML = `<div class="muted">History unavailable: ${this.escapeHtml(error.message)}</div>`;
+    }
+  }
+
+  renderDeviceHistory(events, canRollback) {
+    if (!events.length) return '<div class="muted">No device history recorded yet.</div>';
+
+    return events.map((event) => {
+      const changes = this.renderAuditChanges(event.changes || {});
+      const rollback = canRollback && Object.keys(event.changes || {}).length
+        ? `<button class="edit-btn" type="button" data-rollback-event="${this.escapeHtml(event.id)}">Rollback</button>`
+        : '';
+      return `
+        <div class="history-item">
+          <div class="history-head">
+            <span>${this.escapeHtml(event.eventType || '')}</span>
+            <span class="muted">${this.escapeHtml(this.formatTimestamp(event.timestamp))}</span>
+          </div>
+          <div class="history-meta">${this.escapeHtml((event.actor && event.actor.username) || 'system')} / ${this.escapeHtml((event.actor && event.actor.role) || 'system')}</div>
+          ${event.summary ? `<div class="history-summary">${this.escapeHtml(event.summary)}</div>` : ''}
+          ${changes}
+          <div class="history-actions">${rollback}</div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  renderAuditChanges(changes) {
+    const fields = Object.keys(changes);
+    if (!fields.length) return '<div class="muted">No field changes recorded.</div>';
+
+    return `<div class="history-changes">${fields.map((field) => {
+      const change = changes[field] || {};
+      return `
+        <div class="history-change">
+          <span class="history-field">${this.escapeHtml(field)}</span>
+          <span>${this.escapeHtml(this.formatAuditValue(change.old))}</span>
+          <span class="muted">-&gt;</span>
+          <span>${this.escapeHtml(this.formatAuditValue(change.new))}</span>
+        </div>
+      `;
+    }).join('')}</div>`;
+  }
+
+  async rollbackDevice(eventId) {
+    if (!eventId || !window.confirm('Rollback the fields from this audit event?')) return;
+
+    try {
+      this.clearAlert();
+      const response = await fetch(this.api.rollbackDevice, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-Token': this.csrfToken
+        },
+        body: JSON.stringify({ event_id: eventId })
+      });
+      const payload = await this.readJsonResponse(response);
+      if (!response.ok || payload.ok === false) {
+        if (this.isSessionExpired(payload)) {
+          this.handleSessionExpired(payload);
+          return;
+        }
+        throw new Error(this.errorMessage(payload, `HTTP ${response.status}`));
+      }
+
+      const savedDevice = payload.device;
+      const index = this.devices.findIndex((item) => item.ip === savedDevice.ip);
+      if (index >= 0) this.devices[index] = savedDevice;
+      this.renderStats();
+      this.buildTopology();
+      this.renderTable();
+      this.openModal(savedDevice.ip);
+    } catch (error) {
+      console.error('Device rollback failed:', error);
+      this.showModalError(`Rollback failed: ${error.message}`);
+    }
   }
 
   async saveEdit() {
@@ -384,6 +507,10 @@ class NetworkMapApp {
       const payload = await this.readJsonResponse(response);
 
       if (!response.ok || payload.ok === false) {
+        if (this.isSessionExpired(payload)) {
+          this.handleSessionExpired(payload);
+          return;
+        }
         throw new Error(this.errorMessage(payload, `HTTP ${response.status}`));
       }
 
@@ -477,8 +604,23 @@ class NetworkMapApp {
     return `${rtt.toFixed(2)} ms`;
   }
 
+  formatTimestamp(value) {
+    if (!value) return '';
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return value;
+    return date.toLocaleString();
+  }
+
+  formatAuditValue(value) {
+    if (value === null || value === undefined) return '(missing)';
+    if (value === '') return '(empty)';
+    if (typeof value === 'boolean') return value ? 'true' : 'false';
+    if (typeof value === 'object') return JSON.stringify(value);
+    return String(value);
+  }
+
   escapeHtml(value) {
-    return String(value || '')
+    return String(value ?? '')
       .replace(/&/g, '&amp;')
       .replace(/"/g, '&quot;')
       .replace(/</g, '&lt;')

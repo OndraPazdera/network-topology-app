@@ -1,6 +1,8 @@
 # sensitive runtime data
 data/devices.json
 data/users.json
+data/audit.log
+data/audit.log.lock
 data/backups/
 
 # keep structure but not contents

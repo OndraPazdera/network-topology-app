@@ -1,6 +1,9 @@
 const API_ENDPOINTS = {
   devices: 'api/devices.php',
-  saveDevice: 'api/save-device.php'
+  saveDevice: 'api/save-device.php',
+  deviceHistory: 'api/device-history.php',
+  rollbackDevice: 'api/rollback-device.php',
+  userHistory: 'api/user-history.php'
 };
 
 const TYPE_LABELS = {

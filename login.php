@@ -9,6 +9,7 @@ if ($user !== null) {
 }
 
 $error = '';
+$notice = !empty($_GET['expired']) ? 'Session expired after 5 minutes of inactivity. Please log in again.' : '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $csrfError = auth_require_csrf_post();
     if ($csrfError !== null) {
@@ -37,6 +38,7 @@ header('Content-Type: text/html; charset=utf-8');
 <body class="auth-page">
   <main class="auth-panel">
     <div class="logo">SITOVA MAPA <span>// login</span></div>
+    <?php if ($notice !== ''): ?><div class="notice"><?= htmlspecialchars($notice, ENT_QUOTES, 'UTF-8') ?></div><?php endif; ?>
     <?php if ($error !== ''): ?><div class="app-alert" role="alert"><?= htmlspecialchars($error, ENT_QUOTES, 'UTF-8') ?></div><?php endif; ?>
     <form method="post" class="edit-form">
       <?= auth_csrf_input() ?>

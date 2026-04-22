@@ -22,9 +22,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if ($policyError !== null) {
                 $error = $policyError;
             } else {
-                auth_update_password((string) $user['username'], $new);
-                header('Location: index.php');
-                exit;
+                try {
+                    auth_update_password((string) $user['username'], $new, $user, 'password_change_self');
+                    header('Location: index.php');
+                    exit;
+                } catch (Throwable $e) {
+                    $error = $e->getMessage();
+                }
             }
         }
     }
@@ -67,5 +71,9 @@ header('Content-Type: text/html; charset=utf-8');
       </form>
     </section>
   </main>
+  <script>
+    window.APP_CSRF_TOKEN = <?= json_encode(auth_csrf_token(), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>;
+  </script>
+  <script src="js/session-logout.js"></script>
 </body>
 </html>

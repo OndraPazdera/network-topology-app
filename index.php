@@ -102,5 +102,6 @@ header('Content-Type: text/html; charset=utf-8');
   </script>
   <script src="js/data.js"></script>
   <script src="js/app.js"></script>
+  <script src="js/session-logout.js"></script>
 </body>
 </html>

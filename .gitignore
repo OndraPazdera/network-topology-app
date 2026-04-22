@@ -1,0 +1,14 @@
+# sensitive runtime data
+data/devices.json
+data/users.json
+data/backups/
+
+# keep structure but not contents
+!data/.htaccess
+!data/backups/.htaccess
+
+# OS / editor
+node_modules/
+*.log
+.DS_Store
+Thumbs.db

@@ -42,6 +42,7 @@ Protected routes/endpoints:
 - `logout.php`
 - `api/save-device.php`
 - `api/rollback-device.php`
+- `api/sync-topology.php`
 
 PHP forms include the token as a hidden `csrf_token` field. The authenticated device-save request sends the same token in the `X-CSRF-Token` header. Missing or invalid tokens are rejected server-side; frontend checks are only for transport and readable errors.
 
@@ -125,7 +126,7 @@ Recent account/admin history is available to admins from `api/user-history.php` 
 
 ## Shared data files
 
-- `data/devices.json` is the server-side source of truth.
+- `data/devices.json` is the accepted combined topology snapshot after sync. It is not treated as "MikroTik truth" or "nmap truth".
 - `data/backups/` receives a uniquely named timestamped JSON backup before every successful save attempt.
 - `data/devices.json.lock` is used by PHP as the device write lock file.
 - `data/users.json` stores user accounts and password hashes.
@@ -133,6 +134,57 @@ Recent account/admin history is available to admins from `api/user-history.php` 
 - `data/audit.log` stores append-only audit events as newline-delimited JSON.
 - `data/audit.log.lock` is used by PHP as the audit write lock file.
 - Browser `localStorage` is not used as authoritative persistence.
+
+## Topology refresh package
+
+Topology refresh builds one combined candidate topology from:
+
+- `data/imports/mikrotik-leases.raw`
+- `data/imports/mikrotik-leases.json`
+- `data/imports/nmap-scan.xml`
+
+The candidate is merged from both sources together and compared against `data/devices.json`. Sync writes that combined candidate back into `data/devices.json` as the next accepted snapshot.
+
+Raw MikroTik DHCP lease export is not consumed directly by the app. It should first be converted into the JSON import file with:
+
+```bash
+php tools/parse-mikrotik-leases.php
+```
+
+Default parser paths:
+
+- raw input: `data/imports/mikrotik-leases.raw`
+- JSON output: `data/imports/mikrotik-leases.json`
+
+The parser writes the JSON through a temp file, verifies it, and only then atomically replaces `mikrotik-leases.json`. This makes it suitable for later cron/systemd automation on the server after the raw MikroTik export step completes.
+
+Manual fields are preserved during candidate build and sync:
+
+- `hostname`
+- `comment`
+- `type`
+- `vendor`
+- `warn`
+
+Sync-managed fields currently come from the combined refresh package:
+
+- `mac`
+- `online`
+- `rtt`
+
+The UI also reports package freshness and source alignment. Recommended thresholds:
+
+- max source age: `35` minutes
+- max timestamp gap between MikroTik and nmap files: `5` minutes
+
+Package status rules:
+
+- `missing`: either source file is missing
+- `stale`: either source file is older than 35 minutes
+- `out_of_sync`: both sources exist and are fresh, but their timestamps differ by more than 5 minutes
+- `ok`: both sources exist, both are fresh, and the timestamp gap is within 5 minutes
+
+In practice, MikroTik and nmap should be refreshed together before review/sync so the candidate topology represents one coherent refresh package.
 
 ## Save safety
 

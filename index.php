@@ -43,6 +43,7 @@ header('Content-Type: text/html; charset=utf-8');
         <button class="filter-btn" type="button" data-status-filter="online">● Jen online</button>
         <button class="filter-btn" type="button" data-status-filter="offline">○ Jen offline</button>
         <button class="export-btn refresh-btn" type="button" data-refresh-topology>Refresh topology</button>
+        <div class="package-status" id="topology-package-status" role="status" aria-live="polite"></div>
         <button class="export-btn" type="button" data-export>⬇ Export CSV</button>
       </div>
 

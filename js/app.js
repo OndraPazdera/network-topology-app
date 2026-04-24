@@ -15,6 +15,7 @@ class NetworkMapApp {
     this.statusFilter = 'all';
     this.editingIp = null;
     this.diffPayload = null;
+    this.packageStatus = null;
     this.syncingTopology = false;
     this.elements = {};
   }
@@ -24,6 +25,7 @@ class NetworkMapApp {
     this.bindEvents();
     this.renderLegend();
     await this.loadDevices();
+    await this.loadTopologyPackageStatus();
     return this;
   }
 
@@ -36,6 +38,7 @@ class NetworkMapApp {
     this.elements.tableSearch = document.getElementById('table-search');
     this.elements.tableBody = document.getElementById('table-body');
     this.elements.refreshTopology = document.querySelector('[data-refresh-topology]');
+    this.elements.packageStatus = document.getElementById('topology-package-status');
     this.elements.topologyDiff = document.getElementById('topology-diff');
     this.elements.modal = document.getElementById('modal');
     this.elements.modalTitle = document.getElementById('modal-title');
@@ -131,6 +134,51 @@ class NetworkMapApp {
     }
   }
 
+  async loadTopologyPackageStatus() {
+    if (!this.api.topologyPackageStatus) return;
+
+    try {
+      const response = await fetch(this.api.topologyPackageStatus, { cache: 'no-store' });
+      const payload = await this.readJsonResponse(response);
+
+      if (!response.ok || payload.ok === false) {
+        if (this.isSessionExpired(payload)) {
+          this.handleSessionExpired(payload);
+          return;
+        }
+        throw new Error(this.errorMessage(payload, `HTTP ${response.status}`));
+      }
+
+      this.packageStatus = payload.package || null;
+      this.renderTopologyPackageStatus();
+    } catch (error) {
+      console.error('Topology package status load failed:', error);
+      if (this.elements.packageStatus) {
+        this.elements.packageStatus.innerHTML = '<span class="package-pill package-missing">Package unavailable</span>';
+      }
+    }
+  }
+
+  renderTopologyPackageStatus() {
+    if (!this.elements.packageStatus) return;
+    if (!this.packageStatus) {
+      this.elements.packageStatus.innerHTML = '';
+      return;
+    }
+
+    const packageStatus = this.packageStatus;
+    const sources = packageStatus.sources || {};
+    this.elements.packageStatus.innerHTML = `
+      <div class="package-compact ${this.packageStatusClass(packageStatus.status)}">
+        <span class="package-pill ${this.packageStatusClass(packageStatus.status)}">Package ${this.formatPackageStatus(packageStatus.status)}</span>
+        <span>Age ${this.formatPackageMinutes(packageStatus.ageMinutes)}</span>
+        <span>nmap ${this.formatPackageMinutes(sources.nmap ? sources.nmap.ageMinutes : null)}</span>
+        <span>MikroTik ${this.formatPackageMinutes(sources.mikrotik ? sources.mikrotik.ageMinutes : null)}</span>
+        <span>Gap ${this.formatPackageMinutes(packageStatus.timestampGapMinutes)}</span>
+      </div>
+    `;
+  }
+
   async loadTopologyDiff() {
     if (!this.api.devicesDiff || !this.elements.topologyDiff) return;
 
@@ -152,12 +200,17 @@ class NetworkMapApp {
       }
 
       this.diffPayload = payload;
+      this.packageStatus = (payload.meta && payload.meta.package) || this.packageStatus;
+      this.renderTopologyPackageStatus();
       this.renderTopologyDiff(payload);
     } catch (error) {
       console.error('Topology diff load failed:', error);
       if (this.elements.topologyDiff) {
         this.elements.topologyDiff.hidden = false;
-        this.elements.topologyDiff.innerHTML = `<div class="diff-error">Topology refresh failed: ${this.escapeHtml(error.message)}</div>`;
+        this.elements.topologyDiff.innerHTML = `
+          ${this.renderPackagePanel(this.packageStatus)}
+          <div class="diff-error">Topology refresh failed: ${this.escapeHtml(error.message)}</div>
+        `;
       }
     } finally {
       if (this.elements.refreshTopology) this.elements.refreshTopology.disabled = false;
@@ -167,11 +220,13 @@ class NetworkMapApp {
   renderTopologyDiff(payload) {
     const diff = Array.isArray(payload.diff) ? payload.diff : [];
     const meta = payload.meta || {};
+    const packageStatus = meta.package || this.packageStatus;
     const visibleDiff = diff.filter((item) => this.matchesDiffFilters(item));
 
     if (!diff.length) {
       this.diffPayload = payload;
       this.elements.topologyDiff.innerHTML = `
+        ${this.renderPackagePanel(packageStatus)}
         <div class="review-empty">
           <div class="layer-title">Topology refresh review</div>
           <div>No differences found between saved topology and latest imports.</div>
@@ -192,6 +247,7 @@ class NetworkMapApp {
     const grouped = this.groupDiffByType(visibleDiff);
 
     this.elements.topologyDiff.innerHTML = `
+      ${this.renderPackagePanel(packageStatus)}
       <div class="review-head">
         <div>
           <div class="layer-title">Topology refresh review</div>
@@ -210,6 +266,32 @@ class NetworkMapApp {
         Showing changed devices only. Current topology filters and search are applied here too.
       </div>
       ${visibleDiff.length ? this.renderDiffGroups(grouped) : '<div class="review-empty">No changed devices match the current filters.</div>'}
+    `;
+  }
+
+  renderPackagePanel(packageStatus) {
+    if (!packageStatus) return '';
+
+    const mikrotik = (packageStatus.sources && packageStatus.sources.mikrotik) || {};
+    const nmap = (packageStatus.sources && packageStatus.sources.nmap) || {};
+    const thresholds = packageStatus.thresholds || {};
+
+    return `
+      <div class="package-panel ${this.packageStatusClass(packageStatus.status)}">
+        <div class="package-panel-head">
+          <span class="package-pill ${this.packageStatusClass(packageStatus.status)}">Source package ${this.formatPackageStatus(packageStatus.status)}</span>
+          <span class="package-thresholds">Max age ${this.escapeHtml(thresholds.maxSourceAgeMinutes ?? '')} min · Max gap ${this.escapeHtml(thresholds.maxTimestampGapMinutes ?? '')} min</span>
+        </div>
+        <div class="package-panel-grid">
+          <div><b>Package age</b><span>${this.formatPackageMinutes(packageStatus.ageMinutes)}</span></div>
+          <div><b>Timestamp gap</b><span>${this.formatPackageMinutes(packageStatus.timestampGapMinutes)}</span></div>
+          <div><b>nmap age</b><span>${this.formatPackageMinutes(nmap.ageMinutes)}</span></div>
+          <div><b>MikroTik age</b><span>${this.formatPackageMinutes(mikrotik.ageMinutes)}</span></div>
+          <div><b>nmap state</b><span>${this.formatPackageStatus(nmap.status || 'missing')}</span></div>
+          <div><b>MikroTik state</b><span>${this.formatPackageStatus(mikrotik.status || 'missing')}</span></div>
+        </div>
+        ${packageStatus.warning ? `<div class="package-warning">${this.escapeHtml(packageStatus.warningMessage)}</div>` : ''}
+      </div>
     `;
   }
 
@@ -347,6 +429,12 @@ class NetworkMapApp {
       }
 
       this.diffPayload = payload.refresh || null;
+      if (payload.refresh && payload.refresh.meta && payload.refresh.meta.package) {
+        this.packageStatus = payload.refresh.meta.package;
+        this.renderTopologyPackageStatus();
+      } else {
+        await this.loadTopologyPackageStatus();
+      }
       if (this.diffPayload) {
         this.renderTopologyDiff(this.diffPayload);
       } else {
@@ -381,6 +469,33 @@ class NetworkMapApp {
       changed_rtt: 'rtt'
     };
     return labels[type] || type;
+  }
+
+  formatPackageStatus(status) {
+    const labels = {
+      ok: 'OK',
+      stale: 'stale',
+      missing: 'missing',
+      out_of_sync: 'out of sync'
+    };
+    return labels[status] || status;
+  }
+
+  packageStatusClass(status) {
+    const classes = {
+      ok: 'package-ok',
+      stale: 'package-stale',
+      missing: 'package-missing',
+      out_of_sync: 'package-out-of-sync'
+    };
+    return classes[status] || 'package-missing';
+  }
+
+  formatPackageMinutes(value) {
+    if (value == null || value === '') return '-';
+    const numeric = Number(value);
+    if (!Number.isFinite(numeric)) return String(value);
+    return `${numeric.toFixed(1)} min`;
   }
 
   formatOnline(value) {

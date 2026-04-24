@@ -3,6 +3,8 @@ declare(strict_types=1);
 
 const TOPOLOGY_REFRESH_MANUAL_FIELDS = ['hostname', 'comment', 'type', 'vendor', 'warn'];
 const TOPOLOGY_REFRESH_SYNC_FIELDS = ['mac', 'online', 'rtt'];
+const TOPOLOGY_REFRESH_MAX_SOURCE_AGE_MINUTES = 35;
+const TOPOLOGY_REFRESH_MAX_TIMESTAMP_GAP_MINUTES = 5;
 
 function topology_load_json_array(string $file, string $label): array
 {
@@ -34,6 +36,83 @@ function topology_normalize_mac(mixed $value): string
     $mac = strtoupper(trim((string) $value));
     $mac = str_replace(['-', '.'], ':', $mac);
     return preg_replace('/[^0-9A-F:]/', '', $mac) ?? '';
+}
+
+function topology_minutes_from_seconds(int $seconds): float
+{
+    return round(max(0, $seconds) / 60, 1);
+}
+
+function topology_build_source_package_entry(string $name, string $file): array
+{
+    if (!is_file($file)) {
+        return [
+            'name' => $name,
+            'path' => $file,
+            'exists' => false,
+            'status' => 'missing',
+            'lastModified' => null,
+            'lastModifiedTimestamp' => null,
+            'ageMinutes' => null,
+        ];
+    }
+
+    $mtime = filemtime($file);
+    if ($mtime === false) {
+        throw new RuntimeException('Could not read last modified time for ' . $name . ' source file.');
+    }
+
+    $ageMinutes = topology_minutes_from_seconds(time() - $mtime);
+    return [
+        'name' => $name,
+        'path' => $file,
+        'exists' => true,
+        'status' => $ageMinutes > TOPOLOGY_REFRESH_MAX_SOURCE_AGE_MINUTES ? 'stale' : 'ok',
+        'lastModified' => date(DATE_ATOM, $mtime),
+        'lastModifiedTimestamp' => $mtime,
+        'ageMinutes' => $ageMinutes,
+    ];
+}
+
+function topology_build_package_metadata(string $leasesFile, string $nmapFile): array
+{
+    $mikrotik = topology_build_source_package_entry('mikrotik', $leasesFile);
+    $nmap = topology_build_source_package_entry('nmap', $nmapFile);
+
+    $packageAgeMinutes = null;
+    if ($mikrotik['ageMinutes'] !== null && $nmap['ageMinutes'] !== null) {
+        $packageAgeMinutes = max((float) $mikrotik['ageMinutes'], (float) $nmap['ageMinutes']);
+    }
+
+    $timestampGapMinutes = null;
+    if ($mikrotik['lastModifiedTimestamp'] !== null && $nmap['lastModifiedTimestamp'] !== null) {
+        $timestampGapMinutes = topology_minutes_from_seconds(abs((int) $mikrotik['lastModifiedTimestamp'] - (int) $nmap['lastModifiedTimestamp']));
+    }
+
+    $status = 'ok';
+    if ($mikrotik['status'] === 'missing' || $nmap['status'] === 'missing') {
+        $status = 'missing';
+    } elseif ($mikrotik['status'] === 'stale' || $nmap['status'] === 'stale') {
+        $status = 'stale';
+    } elseif ($timestampGapMinutes !== null && $timestampGapMinutes > TOPOLOGY_REFRESH_MAX_TIMESTAMP_GAP_MINUTES) {
+        $status = 'out_of_sync';
+    }
+
+    return [
+        'status' => $status,
+        'ageMinutes' => $packageAgeMinutes,
+        'timestampGapMinutes' => $timestampGapMinutes,
+        'warning' => $status !== 'ok',
+        'warningMessage' => $status !== 'ok' ? 'Topology candidate may be based on stale or mismatched source data.' : '',
+        'thresholds' => [
+            'maxSourceAgeMinutes' => TOPOLOGY_REFRESH_MAX_SOURCE_AGE_MINUTES,
+            'maxTimestampGapMinutes' => TOPOLOGY_REFRESH_MAX_TIMESTAMP_GAP_MINUTES,
+        ],
+        'sources' => [
+            'mikrotik' => $mikrotik,
+            'nmap' => $nmap,
+        ],
+    ];
 }
 
 function topology_index_devices_by_ip(array $devices): array
@@ -275,6 +354,7 @@ function topology_build_diff(array $currentDevices, array $candidateDevices, arr
 
 function topology_build_refresh_state(string $devicesFile, string $leasesFile, string $nmapFile, ?array $currentDevices = null): array
 {
+    $package = topology_build_package_metadata($leasesFile, $nmapFile);
     $currentDevices ??= topology_load_json_array($devicesFile, 'devices');
     $leasesByIp = topology_load_enabled_leases(topology_load_json_array($leasesFile, 'mikrotik_leases'));
     $nmapByIp = topology_load_nmap_hosts($nmapFile);
@@ -323,6 +403,7 @@ function topology_build_refresh_state(string $devicesFile, string $leasesFile, s
             'candidateCount' => count($candidateDevices),
             'leaseCount' => count($leasesByIp),
             'nmapHostCount' => count($nmapByIp),
+            'package' => $package,
             'manualFieldsPreserved' => TOPOLOGY_REFRESH_MANUAL_FIELDS,
             'syncManagedFields' => TOPOLOGY_REFRESH_SYNC_FIELDS,
         ],

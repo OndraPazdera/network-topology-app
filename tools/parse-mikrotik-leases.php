@@ -138,6 +138,31 @@ function parse_routeros_assignments(string $line): array
     return $fields;
 }
 
+function is_routeros_lease_section_line(string $line): bool
+{
+    return preg_match('/^\/ip\s+dhcp-server\s+lease\s*$/i', $line) === 1;
+}
+
+function is_lease_like_line(string $line): bool
+{
+    return preg_match('/^add\b/i', $line) === 1
+        || preg_match('/^\/ip\s+dhcp-server\s+lease\s+add\b/i', $line) === 1
+        || preg_match('/dhcp-server\s+lease\s+add\b/i', $line) === 1;
+}
+
+function normalize_lease_command_line(string $line): ?string
+{
+    if (preg_match('/^add\b/i', $line) === 1) {
+        return $line;
+    }
+
+    if (preg_match('/^\/ip\s+dhcp-server\s+lease\s+add\b(.*)$/i', $line, $matches) === 1) {
+        return 'add' . $matches[1];
+    }
+
+    return null;
+}
+
 function increment_reason(array &$reasons, string $reason): void
 {
     $reasons[$reason] = ($reasons[$reason] ?? 0) + 1;
@@ -159,17 +184,30 @@ $skippedCount = 0;
 
 foreach (normalize_routeros_lines($raw) as $line) {
     $trimmed = trim($line);
-    if ($trimmed === '' || str_starts_with($trimmed, '#') || str_starts_with($trimmed, '/')) {
+    if ($trimmed === '' || str_starts_with($trimmed, '#')) {
         continue;
     }
 
-    if (!preg_match('/^add\b/i', $trimmed)) {
+    if (is_routeros_lease_section_line($trimmed)) {
+        continue;
+    }
+
+    $leaseLike = is_lease_like_line($trimmed);
+    $normalizedLine = normalize_lease_command_line($trimmed);
+
+    if (!$leaseLike) {
         $skippedCount++;
         increment_reason($skipReasons, 'unsupported_command');
         continue;
     }
 
-    $fields = parse_routeros_assignments($trimmed);
+    if ($normalizedLine === null) {
+        $skippedCount++;
+        increment_reason($skipReasons, 'unsupported_lease_format');
+        continue;
+    }
+
+    $fields = parse_routeros_assignments($normalizedLine);
     if ($fields === []) {
         $skippedCount++;
         increment_reason($skipReasons, 'unparsed_entry');

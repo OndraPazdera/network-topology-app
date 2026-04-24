@@ -14,6 +14,8 @@ class NetworkMapApp {
     this.typeFilter = 'all';
     this.statusFilter = 'all';
     this.editingIp = null;
+    this.diffPayload = null;
+    this.syncingTopology = false;
     this.elements = {};
   }
 
@@ -33,13 +35,18 @@ class NetworkMapApp {
     this.elements.topoSearch = document.getElementById('topo-search');
     this.elements.tableSearch = document.getElementById('table-search');
     this.elements.tableBody = document.getElementById('table-body');
+    this.elements.refreshTopology = document.querySelector('[data-refresh-topology]');
+    this.elements.topologyDiff = document.getElementById('topology-diff');
     this.elements.modal = document.getElementById('modal');
     this.elements.modalTitle = document.getElementById('modal-title');
     this.elements.modalBody = document.getElementById('modal-body');
   }
 
   bindEvents() {
-    this.elements.topoSearch.addEventListener('input', () => this.buildTopology());
+    this.elements.topoSearch.addEventListener('input', () => {
+      this.buildTopology();
+      if (this.diffPayload) this.renderTopologyDiff(this.diffPayload);
+    });
     this.elements.tableSearch.addEventListener('input', () => this.renderTable());
 
     document.querySelectorAll('[data-tab]').forEach((button) => {
@@ -57,6 +64,18 @@ class NetworkMapApp {
     document.querySelectorAll('[data-export]').forEach((button) => {
       button.addEventListener('click', () => this.exportCSV());
     });
+
+    if (this.elements.refreshTopology) {
+      this.elements.refreshTopology.addEventListener('click', () => this.loadTopologyDiff());
+    }
+
+    if (this.elements.topologyDiff) {
+      this.elements.topologyDiff.addEventListener('click', (event) => {
+        const syncDevice = event.target.closest('[data-sync-device]');
+        if (syncDevice) this.syncTopologyDevice(syncDevice.dataset.syncDevice);
+        if (event.target.closest('[data-sync-all]')) this.syncAllTopology();
+      });
+    }
 
     document.querySelectorAll('[data-sort-key]').forEach((header) => {
       header.addEventListener('click', () => this.sortTable(header.dataset.sortKey));
@@ -110,6 +129,275 @@ class NetworkMapApp {
       this.renderTable();
       this.showAlert(`Nepodarilo se nacist sdilena data: ${error.message}`);
     }
+  }
+
+  async loadTopologyDiff() {
+    if (!this.api.devicesDiff || !this.elements.topologyDiff) return;
+
+    try {
+      this.clearAlert();
+      this.elements.topologyDiff.hidden = false;
+      this.elements.topologyDiff.innerHTML = '<div class="diff-loading">Loading topology diff...</div>';
+      if (this.elements.refreshTopology) this.elements.refreshTopology.disabled = true;
+
+      const response = await fetch(this.api.devicesDiff, { cache: 'no-store' });
+      const payload = await this.readJsonResponse(response);
+
+      if (!response.ok || payload.ok === false) {
+        if (this.isSessionExpired(payload)) {
+          this.handleSessionExpired(payload);
+          return;
+        }
+        throw new Error(this.errorMessage(payload, `HTTP ${response.status}`));
+      }
+
+      this.diffPayload = payload;
+      this.renderTopologyDiff(payload);
+    } catch (error) {
+      console.error('Topology diff load failed:', error);
+      if (this.elements.topologyDiff) {
+        this.elements.topologyDiff.hidden = false;
+        this.elements.topologyDiff.innerHTML = `<div class="diff-error">Topology refresh failed: ${this.escapeHtml(error.message)}</div>`;
+      }
+    } finally {
+      if (this.elements.refreshTopology) this.elements.refreshTopology.disabled = false;
+    }
+  }
+
+  renderTopologyDiff(payload) {
+    const diff = Array.isArray(payload.diff) ? payload.diff : [];
+    const meta = payload.meta || {};
+    const visibleDiff = diff.filter((item) => this.matchesDiffFilters(item));
+
+    if (!diff.length) {
+      this.diffPayload = payload;
+      this.elements.topologyDiff.innerHTML = `
+        <div class="review-empty">
+          <div class="layer-title">Topology refresh review</div>
+          <div>No differences found between saved topology and latest imports.</div>
+        </div>
+      `;
+      return;
+    }
+
+    const counts = this.countDiffTypes(diff);
+    const summary = [
+      { label: 'New', value: counts.new_device || 0 },
+      { label: 'Missing', value: counts.missing_device || 0 },
+      { label: 'Status', value: counts.changed_status || 0 },
+      { label: 'MAC', value: counts.changed_mac || 0 },
+      { label: 'RTT', value: counts.changed_rtt || 0 }
+    ];
+
+    const grouped = this.groupDiffByType(visibleDiff);
+
+    this.elements.topologyDiff.innerHTML = `
+      <div class="review-head">
+        <div>
+          <div class="layer-title">Topology refresh review</div>
+          <div class="diff-meta">
+            Current: ${this.escapeHtml(meta.currentCount ?? '')} · Candidate: ${this.escapeHtml(meta.candidateCount ?? '')} · Leases: ${this.escapeHtml(meta.leaseCount ?? '')} · Nmap: ${this.escapeHtml(meta.nmapHostCount ?? '')}
+          </div>
+        </div>
+        <div class="review-actions">
+          <div class="diff-summary">
+            ${summary.map((item) => `<span>${item.label}: <b>${item.value}</b></span>`).join('')}
+          </div>
+          ${this.canEdit ? `<button class="btn-save sync-all-btn" type="button" data-sync-all${this.syncingTopology ? ' disabled' : ''}>Sync all</button>` : ''}
+        </div>
+      </div>
+      <div class="review-note">
+        Showing changed devices only. Current topology filters and search are applied here too.
+      </div>
+      ${visibleDiff.length ? this.renderDiffGroups(grouped) : '<div class="review-empty">No changed devices match the current filters.</div>'}
+    `;
+  }
+
+  countDiffTypes(diff) {
+    return diff.reduce((counts, item) => {
+      (item.changeTypes || []).forEach((type) => {
+        counts[type] = (counts[type] || 0) + 1;
+      });
+      return counts;
+    }, {});
+  }
+
+  renderDiffItem(item) {
+    const current = item.current || null;
+    const candidate = item.candidate || null;
+    const changes = item.changes || {};
+    const types = item.changeTypes || [];
+    const primaryDevice = candidate || current || { ip: item.ip };
+    const currentStatus = current ? this.formatOnline(!!current.online) : '<span class="muted">(none)</span>';
+    const candidateStatus = candidate ? this.formatOnline(!!candidate.online) : '<span class="muted">(removed)</span>';
+
+    return `
+      <div class="review-card type-${this.escapeHtml(primaryDevice.type || 'pc')}">
+        <div class="review-card-head">
+          <span class="node-icon">${this.typeIcons[primaryDevice.type] || this.typeIcons.pc}</span>
+          <span class="review-name">${this.escapeHtml(primaryDevice.hostname || '')}</span>
+        </div>
+        <div class="review-ip">${this.escapeHtml(item.ip)}</div>
+        <span class="node-badge badge-${this.escapeHtml(primaryDevice.type || 'pc')}">${this.typeLabels[primaryDevice.type] || this.typeLabels.pc}</span>
+        <div class="review-badges">${types.map((type) => `<span>${this.escapeHtml(this.formatDiffType(type))}</span>`).join('')}</div>
+        <div class="review-values">
+          ${types.includes('new_device') ? `<div><b>Device</b><span class="muted">(none)</span><span>${this.escapeHtml(this.renderDeviceSummary(candidate))}</span></div>` : ''}
+          ${types.includes('missing_device') ? `<div><b>Device</b><span>${this.escapeHtml(this.renderDeviceSummary(current))}</span><span class="muted">(removed)</span></div>` : ''}
+          ${changes.online ? `<div><b>Status</b><span>${currentStatus}</span><span>${candidateStatus}</span></div>` : ''}
+          ${changes.mac ? `<div><b>MAC</b><span>${this.escapeHtml(this.formatDiffValue(changes.mac.from))}</span><span>${this.escapeHtml(this.formatDiffValue(changes.mac.to))}</span></div>` : ''}
+          ${changes.rtt ? `<div><b>RTT</b><span>${this.escapeHtml(this.formatRttPlain(changes.rtt.from))}</span><span>${this.escapeHtml(this.formatRttPlain(changes.rtt.to))}</span></div>` : ''}
+        </div>
+        ${this.canEdit ? `<button class="edit-btn sync-device-btn" type="button" data-sync-device="${this.escapeHtml(item.ip)}"${this.syncingTopology ? ' disabled' : ''}>Sync device</button>` : ''}
+      </div>
+    `;
+  }
+
+  groupDiffByType(diff) {
+    const grouped = {};
+    this.typeOrder.forEach((type) => grouped[type] = []);
+
+    diff.forEach((item) => {
+      const device = item.candidate || item.current || {};
+      const type = this.typeOrder.includes(device.type) ? device.type : 'pc';
+      grouped[type].push(item);
+    });
+
+    return grouped;
+  }
+
+  renderDiffGroups(grouped) {
+    return this.typeOrder.map((type) => {
+      const items = grouped[type] || [];
+      if (!items.length) return '';
+
+      return `
+        <div class="review-layer">
+          <div class="layer-title">${this.typeIcons[type]} ${this.typeLabels[type].toUpperCase()} <span class="layer-count">(${items.length})</span></div>
+          <div class="review-grid">
+            ${items.map((item) => this.renderDiffItem(item)).join('')}
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  matchesDiffFilters(item) {
+    const device = item.candidate || item.current || {};
+    const query = this.elements.topoSearch.value.toLowerCase();
+    const type = device.type || 'pc';
+    const online = item.candidate ? !!item.candidate.online : !!(item.current && item.current.online);
+
+    if (this.typeFilter !== 'all' && type !== this.typeFilter) return false;
+    if (this.statusFilter === 'online' && !online) return false;
+    if (this.statusFilter === 'offline' && online) return false;
+    if (!query) return true;
+
+    return [
+      item.ip,
+      device.hostname,
+      device.comment,
+      device.vendor,
+      device.mac,
+      this.typeLabels[type],
+      ...(item.changeTypes || [])
+    ].some((value) => String(value || '').toLowerCase().includes(query));
+  }
+
+  async syncTopologyDevice(ip) {
+    if (!ip || this.syncingTopology) return;
+    await this.syncTopology({ mode: 'one', ip });
+  }
+
+  async syncAllTopology() {
+    if (this.syncingTopology || !window.confirm('Sync all pending topology changes?')) return;
+    await this.syncTopology({ mode: 'all' });
+  }
+
+  async syncTopology(request) {
+    try {
+      this.clearAlert();
+      this.syncingTopology = true;
+      if (this.diffPayload) this.renderTopologyDiff(this.diffPayload);
+
+      const response = await fetch(this.api.syncTopology, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-Token': this.csrfToken
+        },
+        body: JSON.stringify(request)
+      });
+      const payload = await this.readJsonResponse(response);
+
+      if (!response.ok || payload.ok === false) {
+        if (this.isSessionExpired(payload)) {
+          this.handleSessionExpired(payload);
+          return;
+        }
+        throw new Error(this.errorMessage(payload, `HTTP ${response.status}`));
+      }
+
+      if (Array.isArray(payload.devices)) {
+        this.devices = payload.devices;
+        this.renderStats();
+        this.buildTopology();
+        this.renderTable();
+      } else {
+        await this.loadDevices();
+      }
+
+      this.diffPayload = payload.refresh || null;
+      if (this.diffPayload) {
+        this.renderTopologyDiff(this.diffPayload);
+      } else {
+        await this.loadTopologyDiff();
+      }
+    } catch (error) {
+      console.error('Topology sync failed:', error);
+      this.showAlert(`Topology sync failed: ${error.message}`);
+      if (this.diffPayload) this.renderTopologyDiff(this.diffPayload);
+    } finally {
+      this.syncingTopology = false;
+      if (this.diffPayload) this.renderTopologyDiff(this.diffPayload);
+    }
+  }
+
+  renderDeviceSummary(device) {
+    if (!device) return '';
+    const parts = [
+      device.hostname || '',
+      device.mac || '',
+      device.online ? 'online' : 'offline'
+    ].filter(Boolean);
+    return parts.join(' / ');
+  }
+
+  formatDiffType(type) {
+    const labels = {
+      new_device: 'new',
+      missing_device: 'missing',
+      changed_status: 'status',
+      changed_mac: 'mac',
+      changed_rtt: 'rtt'
+    };
+    return labels[type] || type;
+  }
+
+  formatOnline(value) {
+    return value ? '<span class="text-green">online</span>' : '<span class="muted">offline</span>';
+  }
+
+  formatDiffValue(value) {
+    if (value === null || value === undefined || value === '') return '(empty)';
+    return String(value);
+  }
+
+  formatRttPlain(rtt) {
+    if (rtt == null || rtt === '') return '-';
+    const numeric = Number(rtt);
+    if (!Number.isFinite(numeric)) return String(rtt);
+    if (numeric === 0) return '<1 ms';
+    return `${numeric.toFixed(2)} ms`;
   }
 
   async readJsonResponse(response) {
@@ -256,6 +544,7 @@ class NetworkMapApp {
     button.classList.add('active');
     this.typeFilter = type;
     this.buildTopology();
+    if (this.diffPayload) this.renderTopologyDiff(this.diffPayload);
   }
 
   setStatusFilter(button, status) {
@@ -263,6 +552,7 @@ class NetworkMapApp {
     button.classList.add('active');
     this.statusFilter = status;
     this.buildTopology();
+    if (this.diffPayload) this.renderTopologyDiff(this.diffPayload);
   }
 
   sortTable(key) {

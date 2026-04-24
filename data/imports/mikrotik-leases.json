@@ -1,0 +1,566 @@
+[
+    {
+        "ip":  "10.77.77.1",
+        "mac":  "50:67:F0:47:6A:6B",
+        "comment":  "Router FORTIGATE",
+        "disabled":  false
+    },
+    {
+        "ip":  "192.168.101.5",
+        "mac":  "9C:93:4E:30:DC:2F",
+        "comment":  "Xerox WC5845 - vyřazeno",
+        "disabled":  true
+    },
+    {
+        "ip":  "192.168.101.3",
+        "mac":  "00:20:6B:DF:0B:4C",
+        "comment":  "MINOLTA - vyřazeno",
+        "disabled":  true
+    },
+    {
+        "ip":  "10.77.77.26",
+        "mac":  "84:2B:2B:69:0E:59",
+        "comment":  "KZP-BC1.kancelarzp.local",
+        "disabled":  false
+    },
+    {
+        "ip":  "192.168.101.10",
+        "mac":  "00:15:5D:6D:A5:06",
+        "comment":  "KZP-D - aktuálně Offline",
+        "disabled":  true
+    },
+    {
+        "ip":  "10.77.77.8",
+        "mac":  "84:25:19:02:E9:03",
+        "comment":  "SAMSUNG XPRESS",
+        "disabled":  false
+    },
+    {
+        "ip":  "10.77.77.9",
+        "mac":  "9C:93:4E:A7:C0:DC",
+        "comment":  "Xerox C8055",
+        "disabled":  false
+    },
+    {
+        "ip":  "10.77.77.23",
+        "mac":  "AC:1F:6B:0F:F3:CC",
+        "comment":  "KZP-Oracle.kancelarzp.local",
+        "disabled":  false
+    },
+    {
+        "ip":  "10.77.77.5",
+        "mac":  "B4:75:0E:7D:B0:CF",
+        "comment":  "sw2 LinksysLGS552P 52-Port Gigabit PoE+ Managed Switch - Umisteni v Archivu",
+        "disabled":  false
+    },
+    {
+        "ip":  "10.77.77.3",
+        "mac":  "FC:F5:28:5B:7A:D9",
+        "comment":  "sw3 Zyxel GS1910-24 GigaBit Ethernet Switch - Serverovna",
+        "disabled":  false
+    },
+    {
+        "ip":  "10.77.77.12",
+        "mac":  "3C:EC:EF:CC:18:4D",
+        "comment":  "KZP-H2.kancelarzp.local",
+        "disabled":  false
+    },
+    {
+        "ip":  "10.77.77.28",
+        "mac":  "00:15:5D:6D:A5:00",
+        "comment":  "KZP-ES.kancelarzp.local",
+        "disabled":  false
+    },
+    {
+        "ip":  "10.77.77.13",
+        "mac":  "00:15:5D:6D:A5:01",
+        "comment":  "KZP-SQL.kancelarzp.local",
+        "disabled":  false
+    },
+    {
+        "ip":  "10.77.77.14",
+        "mac":  "00:15:5D:6D:A5:02",
+        "comment":  "KZP-A.kancelarzp.local",
+        "disabled":  false
+    },
+    {
+        "ip":  "10.77.77.40",
+        "mac":  "00:15:5D:6D:A5:03",
+        "comment":  "KZP-VIRTUAL-PC.kancelarzp.local",
+        "disabled":  false
+    },
+    {
+        "ip":  "192.168.101.19",
+        "mac":  "00:15:5D:6D:A5:04",
+        "comment":  "Upload server",
+        "disabled":  false
+    },
+    {
+        "ip":  "10.77.77.15",
+        "mac":  "00:15:5D:6D:A5:05",
+        "comment":  "spisovka.kancelarzp.local",
+        "disabled":  false
+    },
+    {
+        "ip":  "10.77.77.160",
+        "mac":  "1C:61:B4:6D:71:ED",
+        "comment":  "Sekretariát",
+        "disabled":  false
+    },
+    {
+        "ip":  "10.77.77.102",
+        "mac":  "74:56:3C:4D:BD:13",
+        "comment":  "Natálie Lišková",
+        "disabled":  false
+    },
+    {
+        "ip":  "10.77.77.17",
+        "mac":  "00:15:5D:6D:A5:1E",
+        "comment":  "KZP-FS1.kancelarzp.local",
+        "disabled":  false
+    },
+    {
+        "ip":  "10.77.77.10",
+        "mac":  "9C:93:4E:A2:28:D0",
+        "comment":  "Xerox C8155",
+        "disabled":  false
+    },
+    {
+        "ip":  "10.77.77.59",
+        "mac":  "90:1B:0E:6E:9D:3F",
+        "comment":  "KZP-H.kancelarzp.local",
+        "disabled":  false
+    },
+    {
+        "ip":  "10.77.77.135",
+        "mac":  "08:BF:B8:81:38:D1",
+        "comment":  "PC - Rezkova",
+        "disabled":  false
+    },
+    {
+        "ip":  "10.77.77.104",
+        "mac":  "74:56:3C:4E:69:9A",
+        "comment":  "Zdeňka Svěchotová",
+        "disabled":  false
+    },
+    {
+        "ip":  "192.168.101.58",
+        "mac":  "00:15:5D:6D:A5:12",
+        "comment":  "RINA2023",
+        "disabled":  false
+    },
+    {
+        "ip":  "192.168.101.48",
+        "mac":  "38:3F:10:04:46:A2",
+        "comment":  "GOIP Telefony - VYPNUTO, sledován provoz sítě! edit: 28.09.2024 Odstraněno",
+        "disabled":  true
+    },
+    {
+        "ip":  "10.77.77.146",
+        "mac":  "70:B5:E8:38:FA:00",
+        "comment":  null,
+        "disabled":  false
+    },
+    {
+        "ip":  "10.77.77.107",
+        "mac":  "E4:54:E8:8D:99:E6",
+        "comment":  "Simandlová Šárka",
+        "disabled":  false
+    },
+    {
+        "ip":  "10.77.77.29",
+        "mac":  "00:15:5D:6D:A5:15",
+        "comment":  "KZP-ES-TEST",
+        "disabled":  false
+    },
+    {
+        "ip":  "10.77.77.200",
+        "mac":  "B4:96:91:A2:8D:61",
+        "comment":  null,
+        "disabled":  false
+    },
+    {
+        "ip":  "10.77.77.11",
+        "mac":  "90:1B:0E:6E:9B:A0",
+        "comment":  "KZP-H",
+        "disabled":  false
+    },
+    {
+        "ip":  "10.77.77.43",
+        "mac":  "AC:1F:6B:0D:92:3F",
+        "comment":  "Supermicro (nejspíše KZP-ORACLE management nebo! kzp-h2)",
+        "disabled":  false
+    },
+    {
+        "ip":  "10.77.77.49",
+        "mac":  "F0:92:1C:96:B4:F9",
+        "comment":  "Páskovka",
+        "disabled":  false
+    },
+    {
+        "ip":  "10.77.77.48",
+        "mac":  "90:1B:0E:6F:26:9D",
+        "comment":  "Fujitsu Primergy ServerView - KZP-H",
+        "disabled":  false
+    },
+    {
+        "ip":  "10.77.77.27",
+        "mac":  "34:40:B5:8E:8D:15",
+        "comment":  "KZP-BC2",
+        "disabled":  false
+    },
+    {
+        "ip":  "10.77.77.33",
+        "mac":  "9E:24:8D:2E:8B:D3",
+        "comment":  "Kandao meeting room",
+        "disabled":  false
+    },
+    {
+        "ip":  "10.77.77.38",
+        "mac":  "74:83:C2:73:8F:A0",
+        "comment":  "Ubiquiti Wifi",
+        "disabled":  false
+    },
+    {
+        "ip":  "10.77.77.142",
+        "mac":  "E0:70:EA:AE:A0:C6",
+        "comment":  "PC - Herrmanova",
+        "disabled":  false
+    },
+    {
+        "ip":  "10.77.77.243",
+        "mac":  "B0:AC:FA:A3:25:67",
+        "comment":  "Fujitsu iScsi Pole 243-248 NEMÁ DHCP!",
+        "disabled":  false
+    },
+    {
+        "ip":  "10.77.77.245",
+        "mac":  "B0:AC:FA:A3:25:1E",
+        "comment":  null,
+        "disabled":  false
+    },
+    {
+        "ip":  "10.77.77.246",
+        "mac":  "B0:AC:FA:A3:25:1F",
+        "comment":  null,
+        "disabled":  false
+    },
+    {
+        "ip":  "10.77.77.244",
+        "mac":  "B0:AC:FA:A3:25:66",
+        "comment":  null,
+        "disabled":  false
+    },
+    {
+        "ip":  "10.77.77.247",
+        "mac":  "B0:AC:FA:A0:D3:6F",
+        "comment":  null,
+        "disabled":  false
+    },
+    {
+        "ip":  "10.77.77.248",
+        "mac":  "B0:AC:FA:A0:D2:E2",
+        "comment":  null,
+        "disabled":  false
+    },
+    {
+        "ip":  "10.77.77.2",
+        "mac":  "78:9A:18:BA:F6:70",
+        "comment":  "Router Mikrotik",
+        "disabled":  false
+    },
+    {
+        "ip":  "10.77.77.6",
+        "mac":  "78:9A:18:92:6F:47",
+        "comment":  "Mikrotik AP - Zasedačka",
+        "disabled":  false
+    },
+    {
+        "ip":  "10.77.77.145",
+        "mac":  "18:60:24:E0:AC:FD",
+        "comment":  null,
+        "disabled":  false
+    },
+    {
+        "ip":  "10.77.77.20",
+        "mac":  "00:15:5D:6D:A5:0B",
+        "comment":  "KZP-DC2",
+        "disabled":  false
+    },
+    {
+        "ip":  "10.77.77.16",
+        "mac":  "00:15:5D:6D:A5:25",
+        "comment":  "KZP-DC1",
+        "disabled":  false
+    },
+    {
+        "ip":  "10.77.77.130",
+        "mac":  "3C:52:82:52:D3:C6",
+        "comment":  "PC-CIZEK",
+        "disabled":  false
+    },
+    {
+        "ip":  "10.77.77.100",
+        "mac":  "B4:2E:99:EE:5B:17",
+        "comment":  "Martin Mejzr",
+        "disabled":  false
+    },
+    {
+        "ip":  "192.168.3.4",
+        "mac":  "7C:96:D2:DD:4E:6E",
+        "comment":  "Terminál docházky Zadní",
+        "disabled":  false
+    },
+    {
+        "ip":  "192.168.3.8",
+        "mac":  "7C:96:D2:DD:4E:BD",
+        "comment":  "Terminál docházky Přední",
+        "disabled":  false
+    },
+    {
+        "ip":  "10.77.77.132",
+        "mac":  "50:81:40:22:6D:B0",
+        "comment":  "PC-Beran",
+        "disabled":  false
+    },
+    {
+        "ip":  "10.77.77.101",
+        "mac":  "9C:6B:00:1A:17:BB",
+        "comment":  "PC Barbora Štolfová",
+        "disabled":  false
+    },
+    {
+        "ip":  "10.77.77.39",
+        "mac":  "78:32:1B:FE:49:3C",
+        "comment":  "SWITCH 4 - DGS-1100-05 Gigabit Ethernet Switch - Chodba",
+        "disabled":  false
+    },
+    {
+        "ip":  "10.77.77.140",
+        "mac":  "70:B5:E8:38:FA:73",
+        "comment":  null,
+        "disabled":  false
+    },
+    {
+        "ip":  "10.77.77.139",
+        "mac":  "E4:54:E8:8D:85:CD",
+        "comment":  null,
+        "disabled":  false
+    },
+    {
+        "ip":  "10.77.77.103",
+        "mac":  "74:56:3C:4A:94:EC",
+        "comment":  "Salavcová Eliška",
+        "disabled":  false
+    },
+    {
+        "ip":  "10.77.77.136",
+        "mac":  "50:81:40:24:CA:84",
+        "comment":  "PC - reditel",
+        "disabled":  false
+    },
+    {
+        "ip":  "10.77.77.21",
+        "mac":  "00:15:5D:6D:A5:11",
+        "comment":  "KZP-AP1",
+        "disabled":  false
+    },
+    {
+        "ip":  "192.168.101.86",
+        "mac":  "00:15:5D:6D:A5:14",
+        "comment":  "KZP-nextcloud OLD může se smazat",
+        "disabled":  true
+    },
+    {
+        "ip":  "10.77.77.42",
+        "mac":  "00:15:5D:6D:A5:20",
+        "comment":  null,
+        "disabled":  false
+    },
+    {
+        "ip":  "10.77.77.24",
+        "mac":  "52:54:00:FE:3C:A3",
+        "comment":  "VILP záloha casablanka",
+        "disabled":  false
+    },
+    {
+        "ip":  "10.77.77.7",
+        "mac":  "D4:01:C3:D7:A9:CA",
+        "comment":  "Mikrotik AP - Serverovna",
+        "disabled":  false
+    },
+    {
+        "ip":  "10.77.77.134",
+        "mac":  "70:B5:E8:38:FA:67",
+        "comment":  null,
+        "disabled":  false
+    },
+    {
+        "ip":  "10.77.77.45",
+        "mac":  "00:15:5D:91:89:01",
+        "comment":  null,
+        "disabled":  false
+    },
+    {
+        "ip":  "10.77.77.46",
+        "mac":  "00:15:5D:91:89:02",
+        "comment":  null,
+        "disabled":  false
+    },
+    {
+        "ip":  "10.77.77.4",
+        "mac":  "B4:75:0E:7D:CB:1A",
+        "comment":  "sw1 LinksysLGS552P 52-Port Gigabit PoE+ Managed Switch - Serverovna",
+        "disabled":  false
+    },
+    {
+        "ip":  "10.77.77.35",
+        "mac":  "00:15:5D:6D:A5:26",
+        "comment":  null,
+        "disabled":  false
+    },
+    {
+        "ip":  "10.77.77.44",
+        "mac":  "00:0C:29:7A:C1:E8",
+        "comment":  "Zabbix",
+        "disabled":  false
+    },
+    {
+        "ip":  "10.77.77.47",
+        "mac":  "00:15:5D:91:89:03",
+        "comment":  null,
+        "disabled":  false
+    },
+    {
+        "ip":  "10.77.77.66",
+        "mac":  "90:09:D0:40:C8:25",
+        "comment":  null,
+        "disabled":  false
+    },
+    {
+        "ip":  "10.77.77.67",
+        "mac":  "90:09:D0:40:C8:55",
+        "comment":  null,
+        "disabled":  false
+    },
+    {
+        "ip":  "10.77.77.151",
+        "mac":  "00:E0:4C:68:0B:AF",
+        "comment":  "NTB-Wagner USB-C ethernet port",
+        "disabled":  false
+    },
+    {
+        "ip":  "10.77.77.228",
+        "mac":  "FC:B3:BC:95:8F:4E",
+        "comment":  "NTB-Wagner Wifi INTERNAL",
+        "disabled":  false
+    },
+    {
+        "ip":  "10.77.77.227",
+        "mac":  "C8:3A:35:C8:21:E1",
+        "comment":  "NTB-Wagner Wifi USB - reklamace??",
+        "disabled":  false
+    },
+    {
+        "ip":  "192.168.3.63",
+        "mac":  "0C:0E:76:20:63:4D",
+        "comment":  "NTB-Wagner Wifi USB moje domácí",
+        "disabled":  false
+    },
+    {
+        "ip":  "10.77.77.226",
+        "mac":  "0C:0E:76:20:63:4D",
+        "comment":  "NTB-Wagner Wifi USB moje domácí",
+        "disabled":  false
+    },
+    {
+        "ip":  "192.168.3.254",
+        "mac":  "50:57:9C:5F:77:76",
+        "comment":  "Projektor Zasedačka",
+        "disabled":  false
+    },
+    {
+        "ip":  "10.77.77.147",
+        "mac":  "58:CD:C9:5B:24:C1",
+        "comment":  "Ředitel Jan Kust",
+        "disabled":  false
+    },
+    {
+        "ip":  "192.168.3.3",
+        "mac":  "16:CB:18:DD:50:32",
+        "comment":  "Neznámé zařízení",
+        "disabled":  false
+    },
+    {
+        "ip":  "10.77.77.201",
+        "mac":  "00:15:5D:DF:D2:05",
+        "comment":  null,
+        "disabled":  false
+    },
+    {
+        "ip":  "10.77.77.214",
+        "mac":  "00:15:5D:DF:D2:06",
+        "comment":  null,
+        "disabled":  false
+    },
+    {
+        "ip":  "10.77.77.108",
+        "mac":  "9C:6B:00:8E:E6:3F",
+        "comment":  "PC - Kadrmasova",
+        "disabled":  false
+    },
+    {
+        "ip":  "10.77.77.109",
+        "mac":  "9C:6B:00:8E:E7:48",
+        "comment":  "PC - Kaufnerova",
+        "disabled":  false
+    },
+    {
+        "ip":  "10.77.77.110",
+        "mac":  "9C:6B:00:8E:E4:CB",
+        "comment":  "PC - Drabova",
+        "disabled":  false
+    },
+    {
+        "ip":  "10.77.77.210",
+        "mac":  "10:FF:E0:37:91:1A",
+        "comment":  "PC - Fucikova",
+        "disabled":  false
+    },
+    {
+        "ip":  "10.77.77.218",
+        "mac":  "A0:AD:9F:5D:F2:8B",
+        "comment":  "PC - Pazdera",
+        "disabled":  false
+    },
+    {
+        "ip":  "10.77.77.208",
+        "mac":  "30:56:0F:5D:2D:64",
+        "comment":  "PC- Sopousek",
+        "disabled":  false
+    },
+    {
+        "ip":  "10.77.77.209",
+        "mac":  "34:5A:60:BA:E9:76",
+        "comment":  "PC - Cizek",
+        "disabled":  false
+    },
+    {
+        "ip":  "10.77.77.204",
+        "mac":  "B4:96:91:A2:8D:60",
+        "comment":  null,
+        "disabled":  false
+    },
+    {
+        "ip":  "10.77.77.219",
+        "mac":  "30:56:0F:07:76:56",
+        "comment":  "PC - Smidova",
+        "disabled":  false
+    },
+    {
+        "ip":  "10.77.77.206",
+        "mac":  "30:56:0F:55:8B:C3",
+        "comment":  "PC - Plechata",
+        "disabled":  false
+    }
+]

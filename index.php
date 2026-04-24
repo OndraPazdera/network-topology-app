@@ -42,6 +42,7 @@ header('Content-Type: text/html; charset=utf-8');
         <button class="filter-btn active" type="button" data-status-filter="all">Vše</button>
         <button class="filter-btn" type="button" data-status-filter="online">● Jen online</button>
         <button class="filter-btn" type="button" data-status-filter="offline">○ Jen offline</button>
+        <button class="export-btn refresh-btn" type="button" data-refresh-topology>Refresh topology</button>
         <button class="export-btn" type="button" data-export>⬇ Export CSV</button>
       </div>
 
@@ -57,6 +58,8 @@ header('Content-Type: text/html; charset=utf-8');
         <button class="filter-btn t" type="button" data-type-filter="phone">📞 Telefon</button>
         <button class="filter-btn t" type="button" data-type-filter="pc">💻 PC</button>
       </div>
+
+      <div class="diff-panel" id="topology-diff" hidden></div>
 
       <div class="topology" id="topology-root"></div>
     </section>

@@ -1,5 +1,7 @@
 const API_ENDPOINTS = {
   devices: 'api/devices.php',
+  devicesDiff: 'api/devices-diff.php',
+  syncTopology: 'api/sync-topology.php',
   saveDevice: 'api/save-device.php',
   deviceHistory: 'api/device-history.php',
   rollbackDevice: 'api/rollback-device.php',

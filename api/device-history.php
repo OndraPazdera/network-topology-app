@@ -30,6 +30,6 @@ json_response(200, [
     'events' => audit_read_events([
         'targetType' => 'device',
         'targetIdentifier' => $ip,
-        'eventTypes' => ['device_update', 'device_rollback'],
+        'eventTypes' => ['device_update', 'device_rollback', 'topology_sync_device'],
     ], 25),
 ]);
